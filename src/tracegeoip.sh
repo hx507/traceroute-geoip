@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 #get output of traceroute in multi-line variable TRACE
@@ -11,33 +12,17 @@ IP="$(echo $line | head -n 1 | grep -o '^[0-9]\+ [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9
 
 #if the ip is not null, check if it's private or not
 if [ ! -z "$IP" ]; then
-echo $IP | grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)' &> /dev/null
-ISPUBLIC=$?
+    echo $IP | grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)' &> /dev/null
+    ISPUBLIC=$?
 
 #if ip is public, get the geoip data and store it in the multi-line variable GEOIPLOOKUPRESULT. Loop through the variable and store the country/city/province if present
 if [[ $ISPUBLIC -eq 1 ]];then
-GEOIPLOOKUPRESULT="$( geoiplookup $IP )"
-while read geoline; do
-MATCH="$(echo $geoline | grep 'GeoIP Country Edition:' | cut -f2 -d ':')"
-if [ ! -z "$MATCH" ]; then
-COUNTRY="$MATCH"
-fi
-MATCH="$(echo $geoline | grep 'GeoIP City Edition' | cut -f5 -d ',')"
-if [ ! -z "$MATCH" ]; then
-CITY=",$MATCH"
-fi
-MATCH="$(echo $geoline | grep 'GeoIP City Edition' | cut -f4 -d ',')"
-if [ ! -z "$MATCH" ]; then
-PROVINCE="-$MATCH"
-fi
-done <<< "$GEOIPLOOKUPRESULT"
-GEOIPINFO="[$COUNTRY ] $PROVINCE $CITY"
+    GEOIPINFO="$(python3 ./lookup.py $IP )"
 else
-GEOIPINFO="Private IP"
+    GEOIPINFO="Private IP"
 fi
 echo "$line  $GEOIPINFO";
 else
-echo "$line";
+    echo "$line";
 fi
 done <<< "$TRACE"
-
